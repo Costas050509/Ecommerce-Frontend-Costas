@@ -1,12 +1,56 @@
-const API_URL = VITE_API_URL;
+const API_URL = "http://127.0.0.1:8000";
 
-export const getProductos = async ({ page = 0, limit = 4, nombre = "" } = {}) => {
-  const params = new URLSearchParams();
-  params.append("skip", page * limit);
-  params.append("limit", limit);
-  if (nombre) params.append("nombre", nombre);
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
+  return {
+    "Content-Type": "application/json",
+    "Authorization": token ? `Bearer ${token}` : "",
+  };
+};
 
-  const response = await fetch(`${API_URL}/productos?${params.toString()}`);
-  if (!response.ok) throw new Error("Error al obtener los productos");
-  return await response.json();
+export const crearPedido = async (items) => {
+  // Filtramos para enviar UNICAMENTE producto_id y cantidad al backend
+  const payload = {
+    items: items.map((item) => ({
+      producto_id: item.id || item.producto_id,
+      cantidad: item.cantidad,
+    })),
+  };
+
+  const res = await fetch(`${API_URL}/pedidos/`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Tu sesión venció. Por favor, volvé a iniciar sesión.");
+    }
+    if (res.status === 409) {
+      throw new Error(data.detail || "Sin stock suficiente.");
+    }
+    throw new Error(data.detail || "Ocurrió un error al procesar la compra.");
+  }
+
+  return data;
+};
+
+export const getMisPedidos = async () => {
+  const res = await fetch(`${API_URL}/pedidos/mios`, {
+    headers: getAuthHeaders(),
+  });
+
+  const data = await res.json().catch(() => ([]));
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      throw new Error("Tu sesión venció. Por favor, volvé a iniciar sesión.");
+    }
+    throw new Error(data.detail || "Error al cargar el historial de pedidos.");
+  }
+
+  return data;
 };
