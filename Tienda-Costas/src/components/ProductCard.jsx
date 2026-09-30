@@ -1,53 +1,61 @@
+import React from 'react';
 import { useCarrito } from '../context/CarritoContext';
+import { getImageUrl } from '../services/api';
 
 export default function ProductCard({ producto }) {
   const { agregar } = useCarrito();
-
-  if (!producto) return null;
-
-  // Formato seguro de precio para evitar que rompa con undefined/null
-  const precioFormateado =
-    producto.precio != null
-      ? Number(producto.precio).toLocaleString('es-AR', {
-          minimumFractionDigits: 2,
-        })
-      : '0.00';
-
-  const stockDisponible = producto.stock ?? 0;
+  
+  // Usamos el helper para obtener la URL real de la imagen
+  const imagenUrl = getImageUrl(producto.imagen_url); 
+  
+  const tieneStock = producto.stock !== undefined;
+  const agotado = tieneStock && producto.stock <= 0;
 
   return (
-    <div
-      style={{
-        border: '1px solid #ccc',
-        padding: '15px',
-        borderRadius: '8px',
-        backgroundColor: '#fff',
-      }}
-    >
-      <h3>{producto.nombre || 'Producto sin nombre'}</h3>
-      <p>{producto.descripcion || 'Sin descripción'}</p>
-      <p>
-        <strong>Precio:</strong> ${precioFormateado}
-      </p>
-      <p>
-        <small>Stock disponible: {stockDisponible}</small>
-      </p>
-
-      <button
-        onClick={() => agregar(producto, 1)}
-        disabled={stockDisponible <= 0}
-        style={{
-          padding: '8px 12px',
-          backgroundColor: stockDisponible > 0 ? '#28a745' : '#ccc',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: stockDisponible > 0 ? 'pointer' : 'not-allowed',
-          marginTop: '10px',
-        }}
-      >
-        {stockDisponible > 0 ? 'Agregar al Carrito' : 'Sin Stock'}
-      </button>
-    </div>
+    <article className="bg-[#F9FBF8] border border-[#E9EBE8] rounded-[1rem] p-4 flex flex-col gap-4 relative group hover:shadow-lg transition-shadow">
+      <div className="h-48 w-full -mt-8 mb-4 relative z-10 transition-transform duration-300 group-hover:-translate-y-2 flex items-center justify-center">
+        {imagenUrl ? (
+          <img 
+            src={imagenUrl} 
+            alt={producto.nombre} 
+            className="w-full h-full object-contain drop-shadow-md" 
+          />
+        ) : (
+          // Placeholder si no hay imagen en el backend
+          <div className="w-full h-full bg-surface-container-low rounded-xl flex items-center justify-center">
+            <span className="material-symbols-outlined text-5xl text-on-surface-variant/40">local_drink</span>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-1 flex-1 z-0">
+        <h3 className="font-display text-xl font-bold text-on-surface leading-tight">
+          {producto.nombre}
+        </h3>
+        <p className="font-sans text-sm text-on-surface-variant line-clamp-2">
+          {producto.descripcion || "Jugo natural prensado en frío."}
+        </p>
+      </div>
+      <div className="flex items-center justify-between mt-auto z-0">
+        <div className="flex flex-col">
+          <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-bold text-sm w-fit">
+            ${producto.precio}
+          </span>
+          {tieneStock && (
+            <span className={`text-xs mt-1 font-semibold ${agotado ? 'text-error' : 'text-primary'}`}>
+              {agotado ? 'Agotado' : `Stock: ${producto.stock}`}
+            </span>
+          )}
+        </div>
+        
+        <button 
+          onClick={() => agregar(producto)}
+          disabled={agotado}
+          title={agotado ? "Sin stock" : "Agregar al carrito"}
+          className="bg-primary text-on-primary h-10 w-10 rounded-full flex items-center justify-center hover:bg-primary-container transition-colors shadow-[0_4px_12px_rgba(45,212,97,0.15)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="material-symbols-outlined icon-fill text-[20px]">add_shopping_cart</span>
+        </button>
+      </div>
+    </article>
   );
 }

@@ -1,141 +1,136 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useCarrito } from '../context/CarritoContext';
-import { crearPedido } from '../services/api'; // Si tu api.js está en src/api.js cambiá a: '../api'
+import { crearPedido } from '../services/api';
+import { useNavigate } from 'react-router-dom';
 
 export default function Carrito() {
-  const { items, vaciar, eliminar } = useCarrito();
-  const [isLoading, setIsLoading] = useState(false);
-  const [mensaje, setMensaje] = useState(null);
+  const { items, agregar, restar, quitar, vaciar, total } = useCarrito();
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const total = items.reduce(
-    (acc, item) => acc + (item.precio || 0) * item.cantidad,
-    0,
-  );
-
-  const handleComprar = async () => {
+  const handleCheckout = async () => {
     if (items.length === 0) return;
+    
+    const token = localStorage.getItem('token') || localStorage.getItem('access_token');
+    if (!token) {
+      alert('Para finalizar la compra, necesitas iniciar sesión.');
+      navigate('/login');
+      return;
+    }
 
     setIsLoading(true);
-    setMensaje(null);
+    setError(null);
 
     try {
       await crearPedido(items);
+      alert('¡Compra realizada con éxito! 🥤');
       vaciar();
-      setMensaje({
-        tipo: 'exito',
-        texto: '¡Pedido realizado con éxito!',
-      });
-      setTimeout(() => navigate('/mis-pedidos'), 1500);
+      navigate('/mis-pedidos');
     } catch (err) {
-      setMensaje({
-        tipo: 'error',
-        texto: err.message || 'Error al procesar la compra',
-      });
+      setError(err.message || 'Error al procesar la compra.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <h2>Carrito de Compras</h2>
-
-      {mensaje && (
-        <p
-          style={{
-            color: mensaje.tipo === 'exito' ? 'green' : 'red',
-            fontWeight: 'bold',
-            fontSize: '1.1rem',
-          }}
-        >
-          {mensaje.texto}
-        </p>
-      )}
-
-      {items.length === 0 ? (
-        <p>El carrito está vacío.</p>
-      ) : (
-        <>
-          <div
-            style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
-          >
+    <main className="pt-24 md:pt-32 px-4 max-w-[1280px] mx-auto mb-24 flex flex-col lg:flex-row gap-8">
+      
+      <div className="flex-1 bg-[#F9FBF8] border border-[#E9EBE8] rounded-[2rem] p-6">
+        <h2 className="font-display text-2xl font-bold mb-6 flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary">shopping_cart</span>
+          Tu Carrito
+        </h2>
+        
+        {items.length === 0 ? (
+          <p className="text-center py-12 text-on-surface-variant font-medium">
+            Tu carrito está vacío. ¡Agregá algunos jugos!
+          </p>
+        ) : (
+          <div className="flex flex-col gap-4">
             {items.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  borderBottom: '1px solid #ccc',
-                  paddingBottom: '10px',
-                }}
-              >
-                <div>
-                  <strong>{item.nombre}</strong> — Cantidad: {item.cantidad}
-                  <div>
-                    Precio unitario: $
-                    {Number(item.precio || 0).toLocaleString('es-AR', {
-                      minimumFractionDigits: 2,
-                    })}
-                  </div>
+              <div key={item.id} className="flex items-center gap-4 py-4 border-b border-surface-variant last:border-0">
+                <div className="w-20 h-20 bg-white rounded-[1rem] p-2 drop-shadow-sm flex-shrink-0 flex items-center justify-center">
+                  {item.imagen_url ? (
+                    <img 
+                      src={item.imagen_url} 
+                      alt={item.nombre} 
+                      className="w-full h-full object-contain" 
+                    />
+                  ) : (
+                    <span className="material-symbols-outlined text-3xl text-on-surface-variant/40">local_drink</span>
+                  )}
                 </div>
-                <button
-                  onClick={() => eliminar(item.id)}
-                  style={{
-                    padding: '5px 10px',
-                    backgroundColor: '#dc3545',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                  }}
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-on-surface">{item.nombre}</h3>
+                  <p className="text-primary font-bold">${item.precio}</p>
+                </div>
+                <div className="flex items-center gap-3 bg-surface-container-low rounded-full px-3 py-1">
+                  <button 
+                    onClick={() => restar(item.id)}
+                    className="text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">remove</span>
+                  </button>
+                  <span className="font-bold w-4 text-center">{item.cantidad}</span>
+                  <button 
+                    onClick={() => agregar(item, 1)}
+                    className="text-on-surface-variant hover:text-primary transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-sm">add</span>
+                  </button>
+                </div>
+                <button 
+                  onClick={() => quitar(item.id)}
+                  className="ml-2 text-error hover:bg-error/10 p-2 rounded-full transition-colors"
+                  title="Eliminar del carrito"
                 >
-                  Eliminar
+                  <span className="material-symbols-outlined text-lg">delete</span>
                 </button>
               </div>
             ))}
           </div>
+        )}
+      </div>
 
-          <h3 style={{ marginTop: '20px' }}>
-            Total: $
-            {total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-          </h3>
+      <div className="w-full lg:w-[400px] h-fit bg-surface-container-low rounded-[2rem] p-6 md:p-8">
+        <h3 className="font-display text-xl font-bold mb-6">Resumen</h3>
+        <div className="flex justify-between mb-4 text-on-surface-variant">
+          <span>Subtotal</span>
+          <span>${total.toFixed(2)}</span>
+        </div>
+        <div className="flex justify-between mb-6 text-on-surface-variant">
+          <span>Envío</span>
+          <span>Gratis</span>
+        </div>
+        <div className="flex justify-between items-center mb-8 border-t border-[#d1d1cc] pt-4">
+          <span className="font-bold text-lg">Total</span>
+          <span className="font-display text-2xl font-bold text-primary">${total.toFixed(2)}</span>
+        </div>
 
-          <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-            <button
-              onClick={handleComprar}
-              disabled={isLoading}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: isLoading ? '#ccc' : '#28a745',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                fontSize: '1rem',
-              }}
-            >
-              {isLoading ? 'Procesando...' : 'Finalizar Compra'}
-            </button>
-
-            <button
-              onClick={vaciar}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#6c757d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '5px',
-                cursor: 'pointer',
-              }}
-            >
-              Vaciar Carrito
-            </button>
+        {error && (
+          <div className="bg-error/10 text-error p-3 rounded-xl text-sm mb-4 text-center font-semibold">
+            {error}
           </div>
-        </>
-      )}
+        )}
+
+        <button 
+          onClick={handleCheckout}
+          disabled={items.length === 0 || isLoading}
+          className="w-full bg-primary text-on-primary font-bold py-4 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
+        >
+          {isLoading ? (
+            <>
+              <span className="material-symbols-outlined animate-spin text-sm">refresh</span>
+              Procesando...
+            </>
+          ) : (
+            'Finalizar Compra'
+          )}
+        </button>
+      </div>
+
     </main>
   );
 }

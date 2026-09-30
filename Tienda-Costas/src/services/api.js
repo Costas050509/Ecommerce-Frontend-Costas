@@ -1,39 +1,25 @@
-const API_URL = 'http://127.0.0.1:8000'; // O '/api' si usás proxy en vite.config.js
+const API_URL = 'http://127.0.0.1:8000'; 
 
 const getAuthHeaders = () => {
-  const token =
-    localStorage.getItem('token') || localStorage.getItem('access_token');
+  const token = localStorage.getItem('token') || localStorage.getItem('access_token');
   return {
     'Content-Type': 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
   };
 };
 
-// 1. Obtener catálogo
-export const getProductos = async ({
-  page = 0,
-  limit = 4,
-  nombre = '',
-} = {}) => {
+export const getProductos = async ({ page = 0, limit = 4, nombre = '' } = {}) => {
   const params = new URLSearchParams({
     page: page.toString(),
     limit: limit.toString(),
   });
-
-  if (nombre) {
-    params.append('nombre', nombre);
-  }
+  if (nombre) params.append('nombre', nombre);
 
   const res = await fetch(`${API_URL}/productos?${params.toString()}`);
-
-  if (!res.ok) {
-    throw new Error('Error al obtener productos de la API');
-  }
-
+  if (!res.ok) throw new Error('Error al obtener productos de la API');
   return await res.json();
 };
 
-// 2. Crear Pedido (Checkout)
 export const crearPedido = async (items) => {
   const payload = {
     items: items.map((item) => ({
@@ -49,44 +35,29 @@ export const crearPedido = async (items) => {
   });
 
   const data = await res.json().catch(() => ({}));
-
   if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('Tu sesión venció. Por favor, volvé a iniciar sesión.');
-    }
-    if (res.status === 409) {
-      throw new Error(data.detail || 'Sin stock suficiente.');
-    }
+    if (res.status === 401) throw new Error('Tu sesión venció. Por favor, volvé a iniciar sesión.');
+    if (res.status === 409) throw new Error(data.detail || 'Sin stock suficiente.');
     throw new Error(data.detail || 'Error al procesar la compra.');
   }
-
   return data;
 };
 
-// 3. Historial de pedidos
 export const getMisPedidos = async () => {
-  const res = await fetch(`${API_URL}/pedidos/mios`, {
-    headers: getAuthHeaders(),
-  });
-
+  const res = await fetch(`${API_URL}/pedidos/mios`, { headers: getAuthHeaders() });
   const data = await res.json().catch(() => []);
-
   if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error('Tu sesión venció.');
-    }
+    if (res.status === 401) throw new Error('Tu sesión venció.');
     throw new Error(data.detail || 'Error al cargar el historial.');
   }
-
   return data;
 };
-// 4. Iniciar Sesión (Login)
+
 export const loginUser = async (username, password) => {
   const formData = new URLSearchParams();
   formData.append('username', username);
   formData.append('password', password);
 
-  // ⚠️ Cambiá '/login/' por el nombre exacto que viste en http://127.0.0.1:8000/docs
   const res = await fetch(`${API_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -94,32 +65,83 @@ export const loginUser = async (username, password) => {
   });
 
   const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    throw new Error(data.detail || 'Usuario o contraseña incorrectos');
-  }
+  if (!res.ok) throw new Error(data.detail || 'Usuario o contraseña incorrectos');
 
   const token = data.access_token || data.token;
-  if (token) {
-    localStorage.setItem('token', token);
-  }
-
+  if (token) localStorage.setItem('token', token);
   return data;
 };
 
-// 5. Registrar Usuario
-export const registerUser = async (username, password) => {
-  const res = await fetch(`${API_URL}/register`, {
+export const registerUser = async (email, password) => {
+  const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ 
+      nombre: email.split('@')[0],
+      email: email,
+      password: password,
+      acepto_tratamiento: true
+    }),
   });
 
   const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Error al crear la cuenta');
+  return data;
+};
+
+export const solicitarArrepentimiento = async (pedidoId, productoId) => {
+  const res = await fetch(`${API_URL}/pedidos/${pedidoId}/revocacion`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ producto_id: productoId }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || 'Error al procesar el arrepentimiento.');
+  return data;
+};
+
+export const getMiPerfil = async () => {
+  const res = await fetch(`${API_URL}/auth/me`, { headers: getAuthHeaders() }); // Este sí está en /auth
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Tu sesión venció. Por favor, volvé a iniciar sesión.');
+    throw new Error(data.detail || 'Error al cargar el perfil.');
+  }
+  return data;
+};
+
+// CORRECCIÓN: La ruta es /usuarios/me, no /auth/me
+export const darDeBajaCuenta = async () => {
+  const res = await fetch(`${API_URL}/usuarios/me`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    if (res.status === 401) throw new Error('Tu sesión venció.');
+    throw new Error(data.detail || 'Error al dar de baja la cuenta.');
+  }
+  return data;
+};
+
+// NUEVO: Exportar datos del usuario
+export const exportarMisDatos = async () => {
+  const res = await fetch(`${API_URL}/usuarios/me/exportar`, {
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
-    throw new Error(data.detail || 'Error al crear la cuenta');
+    if (res.status === 401) throw new Error('Tu sesión venció.');
+    throw new Error('Error al exportar los datos.');
   }
+  // Devolvemos el texto crudo en lugar de JSON, porque el backend devuelve un string
+  return await res.text();
+};
 
-  return data;
+export const getImageUrl = (url) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url.startsWith('/') ? '' : '/'}${url}`;
 };

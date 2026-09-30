@@ -1,108 +1,16 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter, Link, Route, Routes } from 'react-router-dom';
-
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Footer from './components/Footer';
 import ProductCard from './components/ProductCard';
-import { CarritoProvider, useCarrito } from './context/CarritoContext';
+import { CarritoProvider } from './context/CarritoContext';
+import Arrepentimiento from './pages/Arrepentimiento';
 import Carrito from './pages/Carrito';
 import Login from './pages/Login';
+import MisDatos from './pages/MisDatos';
 import MisPedidos from './pages/MisPedidos';
 import Register from './pages/Register';
 import { getProductos } from './services/api';
-
-function Navbar() {
-  const { items } = useCarrito();
-  const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
-  const token =
-    localStorage.getItem('token') || localStorage.getItem('access_token');
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('access_token');
-    window.location.href = '/';
-  };
-
-  return (
-    <nav
-      style={{
-        display: 'flex',
-        gap: '20px',
-        padding: '15px 20px',
-        backgroundColor: '#222',
-        color: '#fff',
-        alignItems: 'center',
-      }}
-    >
-      <Link
-        to="/"
-        style={{ color: '#fff', textDecoration: 'none', fontWeight: 'bold' }}
-      >
-        Catálogo
-      </Link>
-      <Link to="/carrito" style={{ color: '#fff', textDecoration: 'none' }}>
-        Carrito 🛒 ({totalItems})
-      </Link>
-
-      {token ? (
-        <>
-          <Link
-            to="/mis-pedidos"
-            style={{ color: '#fff', textDecoration: 'none' }}
-          >
-            Mis Pedidos
-          </Link>
-          <button
-            onClick={handleLogout}
-            style={{
-              marginLeft: 'auto',
-              padding: '6px 12px',
-              backgroundColor: '#dc3545',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Cerrar Sesión
-          </button>
-        </>
-      ) : (
-        <div
-          style={{
-            marginLeft: 'auto',
-            display: 'flex',
-            gap: '10px',
-            alignItems: 'center',
-          }}
-        >
-          <Link
-            to="/login"
-            style={{
-              color: '#fff',
-              textDecoration: 'none',
-              backgroundColor: '#007bff',
-              padding: '6px 12px',
-              borderRadius: '4px',
-            }}
-          >
-            Iniciar Sesión
-          </Link>
-          <Link
-            to="/register"
-            style={{
-              color: '#fff',
-              textDecoration: 'none',
-              backgroundColor: '#28a745',
-              padding: '6px 12px',
-              borderRadius: '4px',
-            }}
-          >
-            Registrarse
-          </Link>
-        </div>
-      )}
-    </nav>
-  );
-}
 
 function Catalogo() {
   const [productos, setProductos] = useState([]);
@@ -118,12 +26,18 @@ function Catalogo() {
     setError(null);
 
     getProductos({ page, limit: LIMIT, nombre: busqueda })
-      .then((data) => setProductos(data))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProductos(data);
+        } else if (data && Array.isArray(data.items)) {
+          setProductos(data.items);
+        } else {
+          setProductos([]);
+        }
+      })
       .catch((err) => {
         console.error(err);
-        setError(
-          'No se pudieron cargar los productos. Intente nuevamente más tarde.',
-        );
+        setError('No se pudieron cargar los productos. Intente nuevamente más tarde.');
       })
       .finally(() => setIsLoading(false));
   }, [page, busqueda]);
@@ -133,90 +47,78 @@ function Catalogo() {
     setBusqueda(e.target.value);
   };
 
-  return (
-    <main style={{ padding: '20px' }}>
-      <h1>Catálogo de Productos</h1>
+  const listaProductos = Array.isArray(productos) ? productos : [];
 
-      <div style={{ marginBottom: '20px' }}>
-        <input
-          type="text"
-          placeholder="Buscar producto por nombre..."
-          value={busqueda}
-          onChange={handleBusqueda}
-          style={{
-            padding: '10px',
-            width: '100%',
-            maxWidth: '400px',
-            fontSize: '1rem',
-            borderRadius: '5px',
-            border: '1px solid #ccc',
-          }}
-        />
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-surface-variant pb-4">
+        <h1 className="font-display font-bold text-2xl sm:text-3xl text-on-surface">
+          Catálogo de Productos
+        </h1>
+
+        <div className="relative w-full sm:w-80">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Buscar por nombre..."
+            value={busqueda}
+            onChange={handleBusqueda}
+            className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-surface-variant rounded-full text-sm focus:outline-none focus:border-primary transition-colors"
+          />
+        </div>
       </div>
 
       {isLoading && (
-        <p style={{ fontSize: '1.2rem' }}>Cargando productos...</p>
+        <div className="text-center py-12 text-on-surface-variant font-medium flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined animate-spin">refresh</span>
+          Cargando productos...
+        </div>
       )}
 
       {error && (
-        <p style={{ color: 'red', fontWeight: 'bold', fontSize: '1.1rem' }}>
+        <div className="bg-error/10 border border-error/20 text-error p-4 rounded-xl text-center font-semibold">
           {error}
-        </p>
+        </div>
       )}
 
-      {!isLoading && !error && productos.length === 0 && (
-        <p style={{ fontSize: '1.1rem', color: '#666' }}>
+      {!isLoading && !error && listaProductos.length === 0 && (
+        <p className="text-center py-12 text-on-surface-variant font-medium">
           No se encontraron productos en el catálogo.
         </p>
       )}
 
-      {!isLoading && !error && productos.length > 0 && (
+      {!isLoading && !error && listaProductos.length > 0 && (
         <>
-          <div
-            style={{
-              display: 'grid',
-              gap: '16px',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-            }}
-          >
-            {productos.map((prod) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {listaProductos.map((prod) => (
               <ProductCard key={prod.id} producto={prod} />
             ))}
           </div>
 
-          <div
-            style={{
-              marginTop: '25px',
-              display: 'flex',
-              gap: '10px',
-              alignItems: 'center',
-            }}
-          >
+          <div className="pt-6 flex items-center justify-center gap-4">
             <button
               disabled={page === 0}
               onClick={() => setPage(page - 1)}
-              style={{
-                padding: '8px 16px',
-                cursor: page === 0 ? 'not-allowed' : 'pointer',
-              }}
+              className="px-4 py-2 border border-surface-variant rounded-full text-sm font-semibold hover:bg-surface-variant/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Anterior
             </button>
-            <span>Página {page + 1}</span>
+            <span className="text-sm font-semibold text-on-surface-variant">
+              Página {page + 1}
+            </span>
             <button
-              disabled={productos.length < LIMIT}
+              disabled={listaProductos.length < LIMIT}
               onClick={() => setPage(page + 1)}
-              style={{
-                padding: '8px 16px',
-                cursor: productos.length < LIMIT ? 'not-allowed' : 'pointer',
-              }}
+              className="px-4 py-2 border border-surface-variant rounded-full text-sm font-semibold hover:bg-surface-variant/50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Siguiente
             </button>
           </div>
         </>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -224,14 +126,23 @@ export default function App() {
   return (
     <CarritoProvider>
       <BrowserRouter>
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Catalogo />} />
-          <Route path="/carrito" element={<Carrito />} />
-          <Route path="/mis-pedidos" element={<MisPedidos />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        </Routes>
+        <div className="min-h-screen flex flex-col bg-surface text-on-surface">
+          <Navbar />
+
+          <main className="flex-1 pt-24 pb-12 px-4 sm:px-6 md:px-8 max-w-[1280px] mx-auto w-full">
+            <Routes>
+              <Route path="/" element={<Catalogo />} />
+              <Route path="/carrito" element={<Carrito />} />
+              <Route path="/mis-pedidos" element={<MisPedidos />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/arrepentimiento/:pedidoId" element={<Arrepentimiento />} />
+              <Route path="/mis-datos" element={<MisDatos />} />
+            </Routes>
+          </main>
+
+          <Footer />
+        </div>
       </BrowserRouter>
     </CarritoProvider>
   );

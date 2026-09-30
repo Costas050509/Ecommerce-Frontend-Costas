@@ -1,56 +1,126 @@
-const API_URL = "http://127.0.0.1:8000";
+const BASE_URL = "http://127.0.0.1:8000";
 
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token") || localStorage.getItem("access_token");
-  return {
-    "Content-Type": "application/json",
-    "Authorization": token ? `Bearer ${token}` : "",
-  };
-};
+// Helper interno para obtener token
+const getToken = () => localStorage.getItem("token") || localStorage.getItem("access_token");
 
-export const crearPedido = async (items) => {
-  // Filtramos para enviar UNICAMENTE producto_id y cantidad al backend
-  const payload = {
-    items: items.map((item) => ({
-      producto_id: item.id || item.producto_id,
-      cantidad: item.cantidad,
-    })),
-  };
+// --- ENDPOINTS DE PEDIDOS ---
 
-  const res = await fetch(`${API_URL}/pedidos/`, {
+// 1. Checkout (POST /pedidos/)
+export const checkout = async (datosPedido) => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/pedidos/`, {
     method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(datosPedido),
   });
 
-  const data = await res.json().catch(() => ({}));
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.detail || "Error al procesar la compra");
+  }
+  return data;
+};
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error("Tu sesión venció. Por favor, volvé a iniciar sesión.");
-    }
-    if (res.status === 409) {
-      throw new Error(data.detail || "Sin stock suficiente.");
-    }
-    throw new Error(data.detail || "Ocurrió un error al procesar la compra.");
+// 2. Mis Pedidos (GET /pedidos/mios)
+export const getMisPedidos = async () => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/pedidos/mios`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo obtener el historial de pedidos");
+  }
+
+  return await response.json();
+};
+
+// 3. Obtener Pedido por ID (GET /pedidos/{pedido_id})
+export const getPedidoById = async (pedidoId) => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/pedidos/${pedidoId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("No se pudo obtener el detalle del pedido");
+  }
+
+  return await response.json();
+};
+
+// 4. Revocar pedido / Arrepentimiento (POST /pedidos/{pedido_id}/revocacion)
+export const revocarPedido = async (pedidoId) => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/pedidos/${pedidoId}/revocacion`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Error al procesar la solicitud de arrepentimiento");
   }
 
   return data;
 };
 
-export const getMisPedidos = async () => {
-  const res = await fetch(`${API_URL}/pedidos/mios`, {
-    headers: getAuthHeaders(),
+// --- ENDPOINTS DE USUARIOS / DERECHOS ---
+
+// Obtener Mis Datos
+export const getMisDatos = async () => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/usuarios/me/datos`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = await res.json().catch(() => ([]));
+  if (!response.ok) throw new Error("No se pudieron cargar tus datos");
+  return await response.json();
+};
 
-  if (!res.ok) {
-    if (res.status === 401) {
-      throw new Error("Tu sesión venció. Por favor, volvé a iniciar sesión.");
-    }
-    throw new Error(data.detail || "Error al cargar el historial de pedidos.");
+// Descargar JSON de mis datos (Blob)
+export const descargarMisDatos = async () => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/usuarios/me/exportar`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) throw new Error("Error al exportar los datos");
+
+  const blob = await response.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mis_datos_ecommerce.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+};
+
+// Darse de baja (Eliminar cuenta)
+export const eliminarMiCuenta = async () => {
+  const token = getToken();
+  const response = await fetch(`${BASE_URL}/usuarios/me`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    const data = await response.json();
+    throw new Error(data.detail || "Error al eliminar la cuenta");
   }
 
-  return data;
+  return true;
 };
