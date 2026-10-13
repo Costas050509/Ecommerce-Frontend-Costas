@@ -1,4 +1,8 @@
-const API_URL = 'http://127.0.0.1:8000'; 
+const API_URL = import.meta.env.VITE_API_URL;
+
+if (!API_URL) {
+  console.error("Falta la variable VITE_API_URL. Configurala en .env (local) o en Vercel.");
+}
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token') || localStorage.getItem('access_token');
@@ -76,11 +80,11 @@ export const registerUser = async (email, password) => {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
+    body: JSON.stringify({
       nombre: email.split('@')[0],
       email: email,
       password: password,
-      acepto_tratamiento: true
+      acepto_tratamiento: true,
     }),
   });
 
@@ -102,7 +106,7 @@ export const solicitarArrepentimiento = async (pedidoId, productoId) => {
 };
 
 export const getMiPerfil = async () => {
-  const res = await fetch(`${API_URL}/auth/me`, { headers: getAuthHeaders() }); // Este sí está en /auth
+  const res = await fetch(`${API_URL}/auth/me`, { headers: getAuthHeaders() });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     if (res.status === 401) throw new Error('Tu sesión venció. Por favor, volvé a iniciar sesión.');
@@ -111,7 +115,6 @@ export const getMiPerfil = async () => {
   return data;
 };
 
-// CORRECCIÓN: La ruta es /usuarios/me, no /auth/me
 export const darDeBajaCuenta = async () => {
   const res = await fetch(`${API_URL}/usuarios/me`, {
     method: 'DELETE',
@@ -126,7 +129,6 @@ export const darDeBajaCuenta = async () => {
   return data;
 };
 
-// NUEVO: Exportar datos del usuario
 export const exportarMisDatos = async () => {
   const res = await fetch(`${API_URL}/usuarios/me/exportar`, {
     headers: getAuthHeaders(),
@@ -136,7 +138,6 @@ export const exportarMisDatos = async () => {
     if (res.status === 401) throw new Error('Tu sesión venció.');
     throw new Error('Error al exportar los datos.');
   }
-  // Devolvemos el texto crudo en lugar de JSON, porque el backend devuelve un string
   return await res.text();
 };
 
