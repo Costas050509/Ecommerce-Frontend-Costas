@@ -19,9 +19,10 @@ export const getProductos = async ({ page = 0, limit = 4, nombre = '' } = {}) =>
   });
   if (nombre) params.append('nombre', nombre);
 
-  const res = await fetch(`${API_URL}/productos?${params.toString()}`);
+  const res = await fetch(`${API_URL}/productos/?${params.toString()}`);
   if (!res.ok) throw new Error('Error al obtener productos de la API');
   return await res.json();
+  
 };
 
 export const crearPedido = async (items) => {
