@@ -8,14 +8,24 @@ export default function Catalogo() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(0);
   const [busqueda, setBusqueda] = useState('');
+  const [lento, setLento] = useState(false); // Para el aviso de "despertando"
   const LIMIT = 4;
+
+  // Aviso de carga lenta: si después de 5s sigue cargando, mostramos mensaje
+  useEffect(() => {
+    if (!isLoading) {
+      setLento(false);
+      return;
+    }
+    const t = setTimeout(() => setLento(true), 5000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   useEffect(() => {
     setIsLoading(true);
     setError(null);
     getProductos({ page, limit: LIMIT, nombre: busqueda })
       .then((data) => {
-        // Blindaje por si viene paginado o array directo
         if (Array.isArray(data)) {
           setProductos(data);
         } else if (data && Array.isArray(data.items)) {
@@ -52,7 +62,6 @@ export default function Catalogo() {
           </button>
         </div>
         <div className="w-full md:w-1/2 h-64 md:h-full absolute md:relative inset-0 md:inset-auto opacity-20 md:opacity-100 flex items-center justify-center">
-          {/* Si hay productos cargados, mostramos el primero como imagen decorativa. Si no, dejamos un placeholder con icono */}
           {productos[0]?.imagen_url ? (
             <img
               src={getImageUrl(productos[0].imagen_url)}
@@ -79,10 +88,15 @@ export default function Catalogo() {
         </div>
       </section>
 
-      {/* Estados */}
+      {/* Estados de carga y error */}
       {isLoading && (
-        <div className="flex justify-center py-12">
+        <div className="flex flex-col items-center gap-3 py-12">
           <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <p role="status" className="text-on-surface-variant font-medium text-sm">
+            {lento
+              ? 'Despertando el servidor, la primera visita puede tardar un minuto...'
+              : 'Cargando productos...'}
+          </p>
         </div>
       )}
       {error && <p className="text-error font-bold text-center bg-[#ffdad6] p-4 rounded-[1rem]">{error}</p>}
@@ -93,7 +107,7 @@ export default function Catalogo() {
         </div>
       )}
 
-      {/* Grilla */}
+      {/* Grilla de productos */}
       {!isLoading && !error && productos.length > 0 && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
