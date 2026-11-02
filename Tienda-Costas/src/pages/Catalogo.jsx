@@ -66,6 +66,8 @@ export default function Catalogo() {
             <img
               src={getImageUrl(productos[0].imagen_url)}
               alt="Jugos frescos"
+              width="500"
+              height="500"
               className="w-full h-full object-contain p-8"
             />
           ) : (

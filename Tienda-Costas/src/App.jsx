@@ -3,6 +3,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ProductCard from './components/ProductCard';
+import ActualizacionDisponible from './components/ActualizacionDisponible'; // <-- LÍNEA AGREGADA
 import { CarritoProvider } from './context/CarritoContext';
 import Arrepentimiento from './pages/Arrepentimiento';
 import Carrito from './pages/Carrito';
@@ -142,6 +143,10 @@ export default function App() {
           </main>
 
           <Footer />
+          
+          {/* COMPONENTE AGREGADO ACÁ */}
+          <ActualizacionDisponible />
+          
         </div>
       </BrowserRouter>
     </CarritoProvider>

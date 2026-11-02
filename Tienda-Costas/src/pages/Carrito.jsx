@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCarrito } from '../context/CarritoContext';
 import { crearPedido } from '../services/api';
+import { useConectado } from '../hooks/useConectado';
 import { useNavigate } from 'react-router-dom';
 
 export default function Carrito() {
@@ -8,6 +9,7 @@ export default function Carrito() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const conectado = useConectado();
 
   const handleCheckout = async () => {
     if (items.length === 0) return;
@@ -56,6 +58,8 @@ export default function Carrito() {
                     <img 
                       src={item.imagen_url} 
                       alt={item.nombre} 
+                      width="80"
+                      height="80"
                       className="w-full h-full object-contain" 
                     />
                   ) : (
@@ -117,7 +121,7 @@ export default function Carrito() {
 
         <button 
           onClick={handleCheckout}
-          disabled={items.length === 0 || isLoading}
+          disabled={items.length === 0 || isLoading || !conectado} 
           className="w-full bg-primary text-on-primary font-bold py-4 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-2"
         >
           {isLoading ? (
@@ -129,6 +133,12 @@ export default function Carrito() {
             'Finalizar Compra'
           )}
         </button>
+
+        {!conectado && (
+          <p role="status" className="text-error text-sm font-bold text-center mt-4">
+            Podés mirar el catálogo, pero para comprar necesitás internet.
+          </p>
+        )}
       </div>
 
     </main>

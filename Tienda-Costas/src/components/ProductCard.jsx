@@ -18,6 +18,8 @@ export default function ProductCard({ producto }) {
           <img 
             src={imagenUrl} 
             alt={producto.nombre} 
+            width="200" 
+            height="200"
             className="w-full h-full object-contain drop-shadow-md" 
           />
         ) : (

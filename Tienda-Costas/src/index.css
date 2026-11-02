@@ -1,4 +1,28 @@
+@import "tailwindcss";
+
+/* Tus colores personalizados y fuentes */
+@theme {
+  --color-primary: #006e2b;
+  --color-primary-container: #2dd461;
+  --color-on-primary: #ffffff;
+  --color-secondary: #914c00;
+  --color-secondary-container: #ff8a00;
+  --color-on-secondary-container: #613100;
+  --color-surface: #fafaf4;
+  --color-on-surface: #1a1c19;
+  --color-surface-variant: #e3e3de;
+  --color-on-surface-variant: #3d4a3c;
+  --color-surface-container-low: #f4f4ee;
+  --color-error: #ba1a1a;
+  
+  --font-sans: "Inter", sans-serif;
+  --font-display: "Montserrat", sans-serif;
+}
+
 body {
   margin: 0;
-  background-color: #fafaf4; /* El fondo que pusiste en el index.html */
+  background-color: #fafaf4;
+  color: #1a1c19;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
