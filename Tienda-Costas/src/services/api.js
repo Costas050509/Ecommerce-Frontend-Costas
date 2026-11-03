@@ -77,7 +77,7 @@ export const loginUser = async (username, password) => {
   return data;
 };
 
-export const registerUser = async (email, password) => {
+export const registerUser = async (email, password, aceptoTerminos = true) => {
   const res = await fetch(`${API_URL}/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -85,7 +85,7 @@ export const registerUser = async (email, password) => {
       nombre: email.split('@')[0],
       email: email,
       password: password,
-      acepto_tratamiento: true,
+      acepto_tratamiento: aceptoTerminos, // <-- Ahora usa el dato real
     }),
   });
 

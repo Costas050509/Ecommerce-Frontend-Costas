@@ -1,0 +1,17 @@
+## Tests (pruebas de la defensa)
+
+Para correr los tests, ejecutar en la terminal (con el entorno virtual activado):
+`npm run test:run` (o `npm test` para modo watch).
+
+| Regla de la tienda | Nombre de tu test | ¿En verde? |
+| :--- | :--- | :--- |
+| Avisa cuando se corta internet | `arranca conectado y se entera cuando se corta` | ✅ Sí |
+| Consentimiento sin pre-marcar (Ley 25.326) | `no deja crear la cuenta sin el consentimiento` | ✅ Sí |
+| Arrepentimiento con login y con código (Disp. 954/2025) | `muestra el código de reembolso al confirmar` | ✅ Sí |
+| El carrito suma cantidades | `Agregar dos veces el mismo producto suma cantidad, no filas` | ✅ Sí |
+| El carrito calcula el total | `Calcula el total` | ✅ Sí |
+| El carrito sobrevive a una recarga | `Sobrevive a una recarga` | ✅ Sí |
+| **Rotura que hicimos (A o B)** | Test que se puso rojo: `no deja crear la cuenta sin el consentimiento` | ❌ **Se puso rojo** |
+
+**Explicación de la rotura:** 
+Elegimos la Opción A. Cambiamos el estado inicial del checkbox en `Register.jsx` para que arranque tildado (`useState(true)`). Al correr los tests, el test de registro falló (se puso rojo) porque esperaba que el botón estuviera deshabilitado inicialmente. Al volver a `useState(false)`, todo volvió a la normalidad.

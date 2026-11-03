@@ -6,6 +6,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [aceptoTerminos, setAceptoTerminos] = useState(false); // <-- NUEVO
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      await registerUser(email, password);
+      await registerUser(email, password, aceptoTerminos); // Pasamos el término
       alert('¡Cuenta creada con éxito! Ahora podés iniciar sesión.');
       navigate('/login');
     } catch (err) {
@@ -48,8 +49,9 @@ export default function Register() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-sm text-on-surface">Email (será tu usuario)</label>
+            <label htmlFor="email" className="font-bold text-sm text-on-surface">Email (será tu usuario)</label>
             <input 
+              id="email"
               type="email" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -60,8 +62,9 @@ export default function Register() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-sm text-on-surface">Contraseña</label>
+            <label htmlFor="password" className="font-bold text-sm text-on-surface">Contraseña</label>
             <input 
+              id="password"
               type="password" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -72,8 +75,9 @@ export default function Register() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="font-bold text-sm text-on-surface">Confirmar Contraseña</label>
+            <label htmlFor="confirmPassword" className="font-bold text-sm text-on-surface">Confirmar Contraseña</label>
             <input 
+              id="confirmPassword"
               type="password" 
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
@@ -83,10 +87,24 @@ export default function Register() {
             />
           </div>
 
+          {/* NUEVO CHECKBOX */}
+          <div className="flex items-center gap-2 mt-2">
+            <input 
+              type="checkbox" 
+              id="terminos"
+              checked={aceptoTerminos}
+              onChange={(e) => setAceptoTerminos(e.target.checked)}
+              className="w-4 h-4 text-primary focus:ring-primary rounded border-gray-300"
+            />
+            <label htmlFor="terminos" className="text-sm text-on-surface-variant">
+              Acepto el tratamiento de mis datos personales
+            </label>
+          </div>
+
           <button 
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-primary text-on-primary font-bold py-3.5 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors mt-4 shadow-md disabled:opacity-50"
+            disabled={isLoading || !aceptoTerminos} // <-- Deshabilitado si no acepta
+            className="w-full bg-primary text-on-primary font-bold py-3.5 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-colors mt-4 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Creando cuenta...' : 'Registrarme'}
           </button>
